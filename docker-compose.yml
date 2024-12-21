@@ -1,0 +1,30 @@
+services:
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      - MINIO_ACCESS_KEY=access-key
+      - MINIO_SECRET_KEY=secret-key
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    tmpfs:
+      - /data:rw,size=12M
+    command: server /data --console-address :9001
+    restart: always
+
+  mc:
+    image: minio/mc
+    container_name: mc
+    depends_on:
+      - minio
+    entrypoint: >
+      sh -c "mc alias set myminio http://minio:9000 access-key secret-key &&
+            mc quota set myminio/cot --size 10M"
+    restart: always
+
+  data_loader:
+    build: ./dataloader
+    depends_on:
+      - minio
+    restart: always
